@@ -37,6 +37,15 @@ class Game {
             { name: 'Navigation', x: 1050, y: 150, w: 120, h: 150 },
             { name: 'Engine', x: 1050, y: 450, w: 120, h: 120 },
         ];
+
+        // Define barriers (walls) with their doors
+        this.barriers = [
+            { x1: 350, y1: 0, x2: 350, y2: 400, doors: [{ y: 200, size: 30 }] },      // Between Electrical and MedBay
+            { x1: 350, y1: 600, x2: 350, y2: 800, doors: [{ y: 700, size: 30 }] },    // Between Cafeteria and lower area
+            { x1: 600, y1: 200, x2: 600, y2: 600, doors: [{ y: 350, size: 30 }, { y: 500, size: 30 }] },    // Between Admin and other rooms
+            { x1: 850, y1: 0, x2: 850, y2: 150, doors: [{ y: 75, size: 30 }] },       // Between top rooms
+            { x1: 1000, y1: 300, x2: 1000, y2: 450, doors: [{ y: 375, size: 30 }] },  // Between Reactor and other rooms
+        ];
     }
 
     isPositionValid(x, y, radius) {
@@ -48,7 +57,58 @@ class Game {
                 return true;
             }
         }
-        return false;
+        
+        // Check if position collides with any barriers
+        for (let barrier of this.barriers) {
+            const isVertical = barrier.x1 === barrier.x2;
+            const barrierX = barrier.x1;
+            const barrierY = barrier.y1 < barrier.y2 ? barrier.y1 : barrier.y2;
+            const barrierEndY = barrier.y1 > barrier.y2 ? barrier.y1 : barrier.y2;
+            
+            if (isVertical) {
+                // Vertical barrier
+                const distToBarrier = Math.abs(x - barrierX);
+                if (distToBarrier < radius + 4) { // 4 is barrier thickness
+                    // Check if within barrier's Y range
+                    if (y > barrierY && y < barrierEndY) {
+                        // Check if position is in a door
+                        let inDoor = false;
+                        for (let door of barrier.doors) {
+                            if (Math.abs(y - door.y) < door.size + radius) {
+                                inDoor = true;
+                                break;
+                            }
+                        }
+                        if (!inDoor) {
+                            return false; // Collision with barrier
+                        }
+                    }
+                }
+            } else {
+                // Horizontal barrier
+                const distToBarrier = Math.abs(y - barrier.y1);
+                if (distToBarrier < radius + 4) { // 4 is barrier thickness
+                    // Check if within barrier's X range
+                    const minX = Math.min(barrier.x1, barrier.x2);
+                    const maxX = Math.max(barrier.x1, barrier.x2);
+                    if (x > minX && x < maxX) {
+                        // Check if position is in a door
+                        let inDoor = false;
+                        for (let door of barrier.doors) {
+                            if (Math.abs(x - door.y) < door.size + radius) {
+                                inDoor = true;
+                                break;
+                            }
+                        }
+                        if (!inDoor) {
+                            return false; // Collision with barrier
+                        }
+                    }
+                }
+            }
+        }
+        
+        return true; // Position is valid
     }
 
     assignRoles() {
@@ -265,28 +325,76 @@ class Game {
             ctx.fillText(room.name, room.x + room.w / 2, room.y + room.h / 2 + 5);
         });
 
-        // Draw walls with visible line
-        ctx.strokeStyle = wallColor;
-        ctx.lineWidth = 4;
-        ctx.setLineDash([5, 5]);
+        // Draw barriers (walls) with visible solid lines
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         
-        // Add visual walls between rooms
-        const walls = [
-            { x1: 350, y1: 0, x2: 350, y2: 400 },      // Between Electrical and MedBay
-            { x1: 350, y1: 600, x2: 350, y2: 800 },    // Between Electrical and Cafeteria
-            { x1: 600, y1: 200, x2: 600, y2: 600 },    // Between Admin and other rooms
-            { x1: 0, y1: 200, x2: 50, y2: 200 },       // Wall segment
-            { x1: 850, y1: 0, x2: 850, y2: 150 },      // Between top rooms
-            { x1: 1000, y1: 300, x2: 1000, y2: 450 },  // Between Reactor and other rooms
-        ];
-
-        walls.forEach(wall => {
+        // Get doors for highlighting
+        const doors = this.getDoors();
+        
+        // Draw each barrier segment (around doors)
+        this.barriers.forEach(barrier => {
+            ctx.strokeStyle = '#ff3333'; // Red barriers
+            
+            if (barrier.x1 === barrier.x2) { // Vertical barrier
+                const x = barrier.x1;
+                const minY = Math.min(barrier.y1, barrier.y2);
+                const maxY = Math.max(barrier.y1, barrier.y2);
+                
+                // Draw barrier segments around doors
+                barrier.doors.forEach(door => {
+                    // Above door
+                    if (minY < door.y - door.size) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, minY);
+                        ctx.lineTo(x, door.y - door.size);
+                        ctx.stroke();
+                    }
+                    // Below door
+                    if (door.y + door.size < maxY) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, door.y + door.size);
+                        ctx.lineTo(x, maxY);
+                        ctx.stroke();
+                    }
+                });
+            } else { // Horizontal barrier
+                const y = barrier.y1;
+                const minX = Math.min(barrier.x1, barrier.x2);
+                const maxX = Math.max(barrier.x1, barrier.x2);
+                
+                // Draw barrier segments around doors
+                barrier.doors.forEach(door => {
+                    // Left of door
+                    if (minX < door.y - door.size) {
+                        ctx.beginPath();
+                        ctx.moveTo(minX, y);
+                        ctx.lineTo(door.y - door.size, y);
+                        ctx.stroke();
+                    }
+                    // Right of door
+                    if (door.y + door.size < maxX) {
+                        ctx.beginPath();
+                        ctx.moveTo(door.y + door.size, y);
+                        ctx.lineTo(maxX, y);
+                        ctx.stroke();
+                    }
+                });
+            }
+        });
+        
+        // Draw doors (green highlighted areas)
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 3;
+        
+        doors.forEach(door => {
             ctx.beginPath();
-            ctx.moveTo(wall.x1, wall.y1);
-            ctx.lineTo(wall.x2, wall.y2);
+            ctx.rect(door.x - door.width / 2, door.y - door.height / 2, door.width, door.height);
+            ctx.fill();
             ctx.stroke();
         });
-        ctx.setLineDash([]);
 
         // Draw task locations (white squares)
         const tasks = [
