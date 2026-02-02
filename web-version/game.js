@@ -6,12 +6,14 @@ class Game {
         this.playerCustomization = playerCustomization;
         this.players = [];
         this.currentPlayer = null;
-        this.gameState = 'playing'; // playing, voting, gameOver
+        this.gameState = 'playing'; // playing, discussion, voting, gameOver
         this.roles = [];
         this.tasks = [];
         this.impostorKillCooldown = 0;
         this.impostorVentCooldown = 0;
         this.emergencyMeetingCooldown = 0;
+        this.votingTimer = 0;
+        this.discussionTimer = 0;
         this.time = 0;
         this.width = 1200;
         this.height = 800;
@@ -138,6 +140,24 @@ class Game {
         this.impostorVentCooldown = Math.max(0, this.impostorVentCooldown - deltaTime);
         this.emergencyMeetingCooldown = Math.max(0, this.emergencyMeetingCooldown - deltaTime);
 
+        // Handle discussion phase
+        if (this.gameState === 'discussion') {
+            this.discussionTimer = Math.max(0, this.discussionTimer - deltaTime);
+            if (this.discussionTimer === 0) {
+                this.gameState = 'voting';
+                this.votingTimer = 30; // 30 second voting phase
+            }
+        }
+
+        // Handle voting phase
+        if (this.gameState === 'voting') {
+            this.votingTimer = Math.max(0, this.votingTimer - deltaTime);
+            if (this.votingTimer === 0) {
+                // Auto-skip if time runs out
+                this.gameState = 'playing';
+            }
+        }
+
         // Update players
         for (let player of this.players) {
             if (!player.dead) {
@@ -156,9 +176,10 @@ class Game {
     }
 
     callEmergencyMeeting() {
-        if (this.emergencyMeetingCooldown === 0) {
-            this.gameState = 'voting';
-            this.emergencyMeetingCooldown = 60;
+        if (this.emergencyMeetingCooldown === 0 && this.gameState === 'playing') {
+            this.gameState = 'discussion';
+            this.discussionTimer = 15; // 15 second discussion phase
+            this.emergencyMeetingCooldown = 120;
         }
     }
 
@@ -191,8 +212,8 @@ class Game {
         const target = this.players.find(p => p.id === targetId);
         if (target) {
             target.dead = true;
-            this.gameState = 'playing';
         }
+        this.gameState = 'playing';
     }
 
     checkWinConditions() {

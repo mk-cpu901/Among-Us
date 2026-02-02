@@ -314,6 +314,25 @@ class UI {
         }
     }
 
+    updateDiscussionScreen(game) {
+        // Show discussion screen with timer
+        const discussionContainer = document.querySelector('.voting-container');
+        if (discussionContainer) {
+            discussionContainer.innerHTML = `
+                <h2>Emergency Meeting - Discussion</h2>
+                <div class="voting-timer">
+                    <p style="font-size: 24px; font-weight: bold;">Time: <span id="discussionTimer">${Math.ceil(game.discussionTimer)}</span>s</p>
+                </div>
+                <p style="text-align: center; margin: 20px 0;">Discuss who the impostor is...</p>
+            `;
+        }
+        // Update timer
+        const timerEl = document.getElementById('discussionTimer');
+        if (timerEl) {
+            timerEl.textContent = Math.ceil(game.discussionTimer);
+        }
+    }
+
     updateVotingScreen(game) {
         this.votingPlayers.innerHTML = '';
         

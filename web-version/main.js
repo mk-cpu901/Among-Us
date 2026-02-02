@@ -91,11 +91,18 @@ function gameLoop() {
             game.update(deltaTime);
             handleMovement();
             ui.updateGameHUD(game);
+        } else if (game.gameState === 'discussion') {
+            game.update(deltaTime);
+            ui.showScreen('discussion');
+            ui.updateDiscussionScreen(game);
         } else if (game.gameState === 'voting') {
+            game.update(deltaTime);
             if (ui.votingScreen.style.display !== 'block') {
                 ui.showScreen('voting');
                 ui.updateVotingScreen(game);
             }
+            // Update voting timer display
+            document.getElementById('votingTimer').textContent = Math.ceil(game.votingTimer);
         } else if (game.gameState === 'gameOver') {
             ui.showScreen('gameOver');
             ui.showGameOver(game);
