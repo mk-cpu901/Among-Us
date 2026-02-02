@@ -95,6 +95,11 @@ function gameLoop() {
             game.update(deltaTime);
             ui.showScreen('discussion');
             ui.updateDiscussionScreen(game);
+            // Update timer display
+            const timerEl = document.getElementById('discussionTimer');
+            if (timerEl) {
+                timerEl.textContent = Math.ceil(game.discussionTimer);
+            }
         } else if (game.gameState === 'voting') {
             game.update(deltaTime);
             if (ui.votingScreen.style.display !== 'block') {
@@ -102,7 +107,10 @@ function gameLoop() {
                 ui.updateVotingScreen(game);
             }
             // Update voting timer display
-            document.getElementById('votingTimer').textContent = Math.ceil(game.votingTimer);
+            const timerEl = document.getElementById('votingTimer');
+            if (timerEl) {
+                timerEl.textContent = Math.ceil(game.votingTimer);
+            }
         } else if (game.gameState === 'gameOver') {
             ui.showScreen('gameOver');
             ui.showGameOver(game);

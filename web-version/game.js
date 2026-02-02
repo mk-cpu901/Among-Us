@@ -66,15 +66,19 @@ class Game {
         for (let i = 0; i < this.playerCount; i++) {
             // Use player customization for the first player, random for others
             const customization = i === 0 ? this.playerCustomization : {
+                color: colors[i],
                 hat: 'none',
                 pet: 'none',
                 visorColor: 'cyan'
             };
             
+            // Use customization color for first player, random for others
+            const playerColor = i === 0 ? this.playerCustomization.color : colors[i];
+            
             const player = new Player(
                 i,
                 `Player ${i + 1}`,
-                colors[i],
+                playerColor,
                 this.roles[i],
                 Math.random() * (this.width - 100) + 50,
                 Math.random() * (this.height - 100) + 50,

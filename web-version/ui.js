@@ -252,6 +252,9 @@ class UI {
             case 'game':
                 this.gameScreen.classList.add('active');
                 break;
+            case 'discussion':
+                this.votingScreen.classList.add('active');
+                break;
             case 'voting':
                 this.votingScreen.classList.add('active');
                 break;
@@ -315,15 +318,15 @@ class UI {
     }
 
     updateDiscussionScreen(game) {
-        // Show discussion screen with timer
-        const discussionContainer = document.querySelector('.voting-container');
-        if (discussionContainer) {
-            discussionContainer.innerHTML = `
+        // Show discussion screen with timer on the voting screen
+        const votingContainer = document.querySelector('.voting-container');
+        if (votingContainer) {
+            votingContainer.innerHTML = `
                 <h2>Emergency Meeting - Discussion</h2>
                 <div class="voting-timer">
                     <p style="font-size: 24px; font-weight: bold;">Time: <span id="discussionTimer">${Math.ceil(game.discussionTimer)}</span>s</p>
                 </div>
-                <p style="text-align: center; margin: 20px 0;">Discuss who the impostor is...</p>
+                <p style="text-align: center; margin: 20px 0; font-size: 16px;">Discuss who the impostor is...</p>
             `;
         }
         // Update timer
