@@ -188,24 +188,11 @@ class Game {
 
     draw(ctx) {
         // Clear canvas
-        ctx.fillStyle = '#2d2d44';
+        ctx.fillStyle = '#1a1a2e';
         ctx.fillRect(0, 0, this.width, this.height);
 
-        // Draw grid
-        ctx.strokeStyle = '#444';
-        ctx.lineWidth = 1;
-        for (let x = 0; x < this.width; x += 100) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, this.height);
-            ctx.stroke();
-        }
-        for (let y = 0; y < this.height; y += 100) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(this.width, y);
-            ctx.stroke();
-        }
+        // Draw Skeld map
+        this.drawSkeldMap(ctx);
 
         // Draw players
         for (let player of this.players) {
@@ -220,6 +207,59 @@ class Game {
             ctx.arc(this.currentPlayer.x, this.currentPlayer.y, 30, 0, Math.PI * 2);
             ctx.stroke();
         }
+    }
+
+    drawSkeldMap(ctx) {
+        // Room colors
+        const roomColor = '#3a3a52';
+        const roomBorder = '#00d4ff';
+        
+        // Define rooms
+        const rooms = [
+            { name: 'Cafeteria', x: 50, y: 400, w: 300, h: 200 },
+            { name: 'Admin', x: 450, y: 450, w: 150, h: 150 },
+            { name: 'Electrical', x: 50, y: 50, w: 200, h: 150 },
+            { name: 'MedBay', x: 450, y: 50, w: 250, h: 150 },
+            { name: 'Reactor', x: 850, y: 350, w: 200, h: 150 },
+            { name: 'Security', x: 850, y: 150, w: 150, h: 150 },
+            { name: 'Navigation', x: 1050, y: 150, w: 120, h: 150 },
+            { name: 'Engine', x: 1050, y: 450, w: 120, h: 120 },
+        ];
+
+        // Draw rooms
+        rooms.forEach(room => {
+            ctx.fillStyle = roomColor;
+            ctx.fillRect(room.x, room.y, room.w, room.h);
+            ctx.strokeStyle = roomBorder;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(room.x, room.y, room.w, room.h);
+
+            // Draw room labels
+            ctx.fillStyle = '#00d4ff';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(room.name, room.x + room.w / 2, room.y + room.h / 2 + 5);
+        });
+
+        // Draw vents
+        const vents = [
+            { x: 150, y: 130 },
+            { x: 550, y: 130 },
+            { x: 150, y: 500 },
+            { x: 950, y: 430 },
+            { x: 1100, y: 500 },
+            { x: 1100, y: 400 },
+        ];
+
+        vents.forEach(vent => {
+            ctx.fillStyle = '#00ff00';
+            ctx.beginPath();
+            ctx.arc(vent.x, vent.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
     }
 }
 
