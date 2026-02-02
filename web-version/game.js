@@ -19,9 +19,35 @@ class Game {
     }
 
     initialize() {
+        this.setupRooms();
         this.assignRoles();
         this.createPlayers();
         this.generateTasks();
+    }
+
+    setupRooms() {
+        this.rooms = [
+            { name: 'Cafeteria', x: 50, y: 400, w: 300, h: 200 },
+            { name: 'Admin', x: 450, y: 450, w: 150, h: 150 },
+            { name: 'Electrical', x: 50, y: 50, w: 200, h: 150 },
+            { name: 'MedBay', x: 450, y: 50, w: 250, h: 150 },
+            { name: 'Reactor', x: 850, y: 350, w: 200, h: 150 },
+            { name: 'Security', x: 850, y: 150, w: 150, h: 150 },
+            { name: 'Navigation', x: 1050, y: 150, w: 120, h: 150 },
+            { name: 'Engine', x: 1050, y: 450, w: 120, h: 120 },
+        ];
+    }
+
+    isPositionValid(x, y, radius) {
+        // Check if player can be at this position without hitting walls
+        for (let room of this.rooms) {
+            // Check if player is inside or overlapping with a room
+            if (x + radius > room.x && x - radius < room.x + room.w &&
+                y + radius > room.y && y - radius < room.y + room.h) {
+                return true;
+            }
+        }
+        return false;
     }
 
     assignRoles() {
@@ -113,7 +139,7 @@ class Game {
         // Update players
         for (let player of this.players) {
             if (!player.dead) {
-                player.update(deltaTime, this.width, this.height);
+                player.update(deltaTime, this.width, this.height, this);
             }
         }
 
@@ -213,21 +239,9 @@ class Game {
         // Room colors
         const roomColor = '#3a3a52';
         const roomBorder = '#00d4ff';
-        
-        // Define rooms
-        const rooms = [
-            { name: 'Cafeteria', x: 50, y: 400, w: 300, h: 200 },
-            { name: 'Admin', x: 450, y: 450, w: 150, h: 150 },
-            { name: 'Electrical', x: 50, y: 50, w: 200, h: 150 },
-            { name: 'MedBay', x: 450, y: 50, w: 250, h: 150 },
-            { name: 'Reactor', x: 850, y: 350, w: 200, h: 150 },
-            { name: 'Security', x: 850, y: 150, w: 150, h: 150 },
-            { name: 'Navigation', x: 1050, y: 150, w: 120, h: 150 },
-            { name: 'Engine', x: 1050, y: 450, w: 120, h: 120 },
-        ];
 
         // Draw rooms
-        rooms.forEach(room => {
+        this.rooms.forEach(room => {
             ctx.fillStyle = roomColor;
             ctx.fillRect(room.x, room.y, room.w, room.h);
             ctx.strokeStyle = roomBorder;
@@ -289,9 +303,19 @@ class Player {
         }
     }
 
-    update(deltaTime, width, height) {
-        this.x += this.velocity.x;
-        this.y += this.velocity.y;
+    update(deltaTime, width, height, game) {
+        const newX = this.x + this.velocity.x;
+        const newY = this.y + this.velocity.y;
+
+        // Check collision with walls - only allow movement if new position is valid
+        if (game && game.isPositionValid(newX, newY, this.radius)) {
+            this.x = newX;
+            this.y = newY;
+        } else if (!game) {
+            // Fallback if game object not provided
+            this.x = newX;
+            this.y = newY;
+        }
 
         // Boundary check
         this.x = Math.max(this.radius, Math.min(width - this.radius, this.x));
