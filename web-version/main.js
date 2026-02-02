@@ -16,10 +16,9 @@ window.startTaskMinigame = (taskId) => {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     ui = new UI();
-    canvas = document.getElementById('gameCanvas');
-    ctx = canvas.getContext('2d');
 
-    // Set canvas size
+    // Set canvas size - get reference but don't set context yet
+    canvas = document.getElementById('gameCanvas');
     canvas.width = 1200;
     canvas.height = 800;
 
@@ -44,6 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function startGame() {
     const playerCount = parseInt(ui.playerCountInput.value);
     const impostorCount = parseInt(ui.impostorCountInput.value);
+
+    // Get canvas context when starting game
+    ctx = canvas.getContext('2d');
 
     game = new Game(playerCount, impostorCount, ui.playerCustomization);
     ui.showScreen('game');
