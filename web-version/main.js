@@ -23,8 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.width = 1200;
     canvas.height = 800;
 
-    // Start button
-    ui.startButton.addEventListener('click', startGame);
+    // Start button - goes to customization
+    ui.startButton.addEventListener('click', () => {
+        ui.showScreen('customization');
+    });
+
+    // Play button - starts the game
+    ui.playButton.addEventListener('click', startGame);
 
     // Keyboard input
     document.addEventListener('keydown', handleKeyDown);
@@ -40,7 +45,7 @@ function startGame() {
     const playerCount = parseInt(ui.playerCountInput.value);
     const impostorCount = parseInt(ui.impostorCountInput.value);
 
-    game = new Game(playerCount, impostorCount);
+    game = new Game(playerCount, impostorCount, ui.playerCustomization);
     ui.showScreen('game');
 
     // Start game loop

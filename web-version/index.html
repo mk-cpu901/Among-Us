@@ -24,7 +24,42 @@
                         <span id="impostorLabel">1</span>
                     </div>
                 </div>
-                <button id="startButton" class="btn btn-primary">START GAME</button>
+                <button id="startButton" class="btn btn-primary">CUSTOMIZE CHARACTER</button>
+            </div>
+        </div>
+
+        <!-- Customization Screen -->
+        <div id="customizationScreen" class="screen">
+            <div class="customization-container">
+                <h1>Customize Your Character</h1>
+                <div class="customization-content">
+                    <div class="character-preview">
+                        <canvas id="previewCanvas" width="150" height="180"></canvas>
+                        <p id="previewName">Your Character</p>
+                    </div>
+                    <div class="customization-options">
+                        <div class="option-group">
+                            <label>Color:</label>
+                            <div class="color-grid" id="colorGrid"></div>
+                        </div>
+                        <div class="option-group">
+                            <label>Hat:</label>
+                            <div class="hat-grid" id="hatGrid"></div>
+                        </div>
+                        <div class="option-group">
+                            <label>Pet:</label>
+                            <div class="pet-grid" id="petGrid"></div>
+                        </div>
+                        <div class="option-group">
+                            <label>Visor Color:</label>
+                            <div class="visor-grid" id="visorGrid"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="customization-buttons">
+                    <button id="backButton" class="btn btn-secondary">BACK</button>
+                    <button id="playButton" class="btn btn-primary">PLAY GAME</button>
+                </div>
             </div>
         </div>
 
