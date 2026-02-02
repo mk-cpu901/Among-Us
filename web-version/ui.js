@@ -304,9 +304,13 @@ class UI {
         const existing = document.getElementById('taskList');
         if (existing) existing.remove();
 
-        const gameContainer = document.querySelector('.game-container');
-        if (gameContainer) {
-            gameContainer.insertAdjacentHTML('beforeend', taskHtml);
+        try {
+            const gameContainer = document.querySelector('.game-container');
+            if (gameContainer) {
+                gameContainer.insertAdjacentHTML('beforeend', taskHtml);
+            }
+        } catch (error) {
+            console.error('Error updating task list:', error);
         }
     }
 

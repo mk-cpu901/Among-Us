@@ -41,44 +41,67 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function startGame() {
-    const playerCount = parseInt(ui.playerCountInput.value);
-    const impostorCount = parseInt(ui.impostorCountInput.value);
+    try {
+        const playerCount = parseInt(ui.playerCountInput.value);
+        const impostorCount = parseInt(ui.impostorCountInput.value);
 
-    // Get canvas context when starting game
-    ctx = canvas.getContext('2d');
+        // Validate inputs
+        if (!playerCount || !impostorCount || playerCount < 4 || impostorCount < 1) {
+            alert('Invalid player or impostor count!');
+            return;
+        }
 
-    game = new Game(playerCount, impostorCount, ui.playerCustomization);
-    ui.showScreen('game');
+        // Get canvas context when starting game
+        if (!canvas) {
+            console.error('Canvas not found!');
+            return;
+        }
+        ctx = canvas.getContext('2d');
 
-    // Start game loop
-    gameLoop();
+        game = new Game(playerCount, impostorCount, ui.playerCustomization);
+        ui.showScreen('game');
+
+        // Start game loop
+        lastTime = Date.now();
+        gameLoop();
+    } catch (error) {
+        console.error('Error starting game:', error);
+        alert('Error starting game: ' + error.message);
+    }
 }
 
 function gameLoop() {
-    const now = Date.now();
-    const deltaTime = (now - lastTime) / 1000;
-    lastTime = now;
+    try {
+        const now = Date.now();
+        const deltaTime = (now - lastTime) / 1000;
+        lastTime = now;
 
-    // Update
-    if (game.gameState === 'playing') {
-        game.update(deltaTime);
-        handleMovement();
-        ui.updateGameHUD(game);
-    } else if (game.gameState === 'voting') {
-        if (ui.votingScreen.style.display !== 'block') {
-            ui.showScreen('voting');
-            ui.updateVotingScreen(game);
+        // Update
+        if (game.gameState === 'playing') {
+            game.update(deltaTime);
+            handleMovement();
+            ui.updateGameHUD(game);
+        } else if (game.gameState === 'voting') {
+            if (ui.votingScreen.style.display !== 'block') {
+                ui.showScreen('voting');
+                ui.updateVotingScreen(game);
+            }
+        } else if (game.gameState === 'gameOver') {
+            ui.showScreen('gameOver');
+            ui.showGameOver(game);
+            return; // Stop loop
         }
-    } else if (game.gameState === 'gameOver') {
-        ui.showScreen('gameOver');
-        ui.showGameOver(game);
-        return; // Stop loop
+
+        // Draw
+        if (ctx && game) {
+            game.draw(ctx);
+        }
+
+        requestAnimationFrame(gameLoop);
+    } catch (error) {
+        console.error('Game loop error:', error);
+        requestAnimationFrame(gameLoop);
     }
-
-    // Draw
-    game.draw(ctx);
-
-    requestAnimationFrame(gameLoop);
 }
 
 function handleKeyDown(e) {
