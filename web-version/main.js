@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.showScreen('customization');
     });
 
-    // Play button - starts the game
+    // Play button - starts the game (now on home page)
     ui.playButton.addEventListener('click', startGame);
 
     // Keyboard input
