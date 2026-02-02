@@ -49,24 +49,33 @@ class WiringGame extends Minigame {
         super('wiring');
         this.connections = [];
         this.correctConnections = [];
+        this.leftColors = ['blue', 'yellow', 'red']; // Fixed order on left
+        this.rightColors = ['red', 'yellow', 'blue']; // Will be scrambled on right
         this.setupConnections();
     }
 
     setupConnections() {
-        const pairs = [
-            { left: 0, right: 2 },
-            { left: 1, right: 0 },
-            { left: 2, right: 1 }
-        ];
+        // Scramble the right side colors
+        this.rightColors = this.rightColors.sort(() => Math.random() - 0.5);
         
-        // Shuffle right side
-        const rightOrder = [0, 1, 2].sort(() => Math.random() - 0.5);
-        this.correctConnections = pairs.map((p, i) => ({
-            left: p.left,
-            right: rightOrder.indexOf(p.right)
+        // Create correct connections based on color matching
+        // Left side is always: blue (0), yellow (1), red (2)
+        // Right side colors are scrambled, so we need to find where each left color appears on right
+        this.correctConnections = this.leftColors.map((leftColor, leftIndex) => ({
+            left: leftIndex,
+            right: this.rightColors.indexOf(leftColor)
         }));
 
         this.connections = Array(3).fill(null);
+    }
+
+    getColorCode(colorName) {
+        const colors = {
+            'blue': '#0066ff',
+            'yellow': '#ffff00',
+            'red': '#ff0000'
+        };
+        return colors[colorName] || '#ff0000';
     }
 
     show() {
@@ -75,14 +84,14 @@ class WiringGame extends Minigame {
         const html = `
             <div style="background: rgba(0, 0, 0, 0.95); padding: 30px; border-radius: 15px; width: 500px; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
                 <h2 style="color: #00d4ff; margin-bottom: 20px;">Fix Wiring</h2>
-                <p style="color: #ccc; margin-bottom: 20px;">Connect the wires correctly by matching left and right sides.</p>
+                <p style="color: #ccc; margin-bottom: 20px;">Connect the wires by matching the colors.</p>
                 
                 <div style="display: flex; justify-content: space-between; margin: 30px 0; position: relative; height: 200px;">
                     <!-- Left side -->
                     <div>
                         <div style="color: #00d4ff; margin-bottom: 10px; font-weight: bold;">Left</div>
-                        ${[0, 1, 2].map(i => `
-                            <div id="left-${i}" class="wire-point" style="background: #ff0000; width: 20px; height: 20px; margin: 40px 0; border-radius: 50%; cursor: pointer; position: relative; z-index: 10;"></div>
+                        ${this.leftColors.map((color, i) => `
+                            <div id="left-${i}" class="wire-point" style="background: ${this.getColorCode(color)}; width: 20px; height: 20px; margin: 40px 0; border-radius: 50%; cursor: pointer; position: relative; z-index: 10; border: 2px solid #666;"></div>
                         `).join('')}
                     </div>
                     
@@ -92,8 +101,8 @@ class WiringGame extends Minigame {
                     <!-- Right side -->
                     <div>
                         <div style="color: #00d4ff; margin-bottom: 10px; font-weight: bold;">Right</div>
-                        ${[0, 1, 2].map(i => `
-                            <div id="right-${i}" class="wire-point" style="background: #ff0000; width: 20px; height: 20px; margin: 40px 0; border-radius: 50%; cursor: pointer;"></div>
+                        ${this.rightColors.map((color, i) => `
+                            <div id="right-${i}" class="wire-point" style="background: ${this.getColorCode(color)}; width: 20px; height: 20px; margin: 40px 0; border-radius: 50%; cursor: pointer; border: 2px solid #666;"></div>
                         `).join('')}
                     </div>
                 </div>
@@ -116,13 +125,13 @@ class WiringGame extends Minigame {
             point.addEventListener('click', () => {
                 if (selected === null) {
                     selected = { side: point.id.split('-')[0], index: parseInt(point.id.split('-')[1]) };
-                    point.style.background = '#00ff00';
+                    point.style.boxShadow = '0 0 10px #00ff00';
                 } else {
                     if (selected.side !== point.id.split('-')[0]) {
                         this.connections[selected.index] = parseInt(point.id.split('-')[1]);
                         this.redrawWiring();
                     }
-                    document.querySelectorAll('.wire-point').forEach(p => p.style.background = '#ff0000');
+                    document.querySelectorAll('.wire-point').forEach(p => p.style.boxShadow = 'none');
                     selected = null;
                 }
             });
@@ -130,6 +139,7 @@ class WiringGame extends Minigame {
 
         document.getElementById('resetWiring').addEventListener('click', () => {
             this.connections = Array(3).fill(null);
+            document.querySelectorAll('.wire-point').forEach(p => p.style.boxShadow = 'none');
             this.redrawWiring();
         });
 
