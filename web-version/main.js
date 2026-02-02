@@ -54,11 +54,20 @@ function startGame() {
         // Get canvas context when starting game
         if (!canvas) {
             console.error('Canvas not found!');
+            alert('Canvas not found!');
             return;
         }
         ctx = canvas.getContext('2d');
 
+        console.log('Creating game with', playerCount, 'players and', impostorCount, 'impostors');
         game = new Game(playerCount, impostorCount, ui.playerCustomization);
+        
+        if (!game) {
+            alert('Failed to create game!');
+            return;
+        }
+
+        console.log('Game created successfully:', game);
         ui.showScreen('game');
 
         // Start game loop
@@ -66,6 +75,7 @@ function startGame() {
         gameLoop();
     } catch (error) {
         console.error('Error starting game:', error);
+        console.error('Error stack:', error.stack);
         alert('Error starting game: ' + error.message);
     }
 }

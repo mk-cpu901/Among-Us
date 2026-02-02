@@ -365,7 +365,6 @@ class Player {
             visorColor: customization.visorColor || 'cyan'
         };
     }
-    }
 
     move(direction) {
         const speed = this.speed;
