@@ -58,16 +58,50 @@ class Game {
     generateTasks() {
         const taskTypes = ['wiring', 'card', 'reactor', 'power'];
         const taskCount = Math.ceil(this.playerCount * 2);
+        this.tasks = [];
         
         for (let i = 0; i < taskCount; i++) {
             const taskType = taskTypes[Math.floor(Math.random() * taskTypes.length)];
+            const assignedTo = i % this.playerCount;
             this.tasks.push({
                 id: i,
                 type: taskType,
+                name: this.getTaskName(taskType),
                 completed: false,
-                assignedTo: Math.floor(Math.random() * this.playerCount)
+                assignedTo: assignedTo,
+                active: false,
+                minigame: null
             });
         }
+    }
+
+    getTaskName(type) {
+        const names = {
+            wiring: 'Fix Wiring',
+            card: 'Swipe Card',
+            reactor: 'Start Reactor',
+            power: 'Divert Power'
+        };
+        return names[type] || 'Unknown Task';
+    }
+
+    startTask(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task && task.assignedTo === this.currentPlayer.id && !task.completed) {
+            task.active = true;
+            task.minigame = Minigame.createGame(task.type);
+            task.minigame.show();
+        }
+    }
+
+    completeTask(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task && task.minigame && task.minigame.completed) {
+            task.completed = true;
+            task.active = false;
+            return true;
+        }
+        return false;
     }
 
     update(deltaTime) {

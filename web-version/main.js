@@ -6,6 +6,13 @@ let ctx = null;
 let lastTime = Date.now();
 const keysPressed = {};
 
+// Task minigame handler
+window.startTaskMinigame = (taskId) => {
+    if (game && game.currentPlayer.role === 'crewmate') {
+        game.startTask(taskId);
+    }
+};
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     ui = new UI();

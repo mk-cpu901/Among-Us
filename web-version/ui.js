@@ -80,6 +80,37 @@ class UI {
         if (impostorsAlive > 0 && crewmatesAlive > 0) {
             this.gameStatus.textContent = `Impostors: ${impostorsAlive} | Crewmates: ${crewmatesAlive}`;
         }
+
+        // Show task list
+        this.updateTaskList(game);
+    }
+
+    updateTaskList(game) {
+        let taskHtml = '<div id="taskList" style="position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; max-width: 250px; max-height: 400px; overflow-y: auto; border: 2px solid #00d4ff;">';
+        taskHtml += '<div style="color: #00d4ff; font-weight: bold; margin-bottom: 10px;">📋 Your Tasks</div>';
+
+        const myTasks = game.tasks.filter(t => t.assignedTo === game.currentPlayer.id);
+        
+        if (myTasks.length === 0) {
+            taskHtml += '<div style="color: #aaa; font-size: 12px;">No tasks assigned</div>';
+        } else {
+            myTasks.forEach(task => {
+                const icon = task.completed ? '✓' : '→';
+                const color = task.completed ? '#00ff00' : '#fff';
+                const cursor = task.completed ? 'default' : 'pointer';
+                taskHtml += `<div style="color: ${color}; margin: 8px 0; font-size: 12px; cursor: ${cursor}; padding: 5px; background: rgba(255,255,255,0.1); border-radius: 4px;" onclick="window.startTaskMinigame(${task.id})">${icon} ${task.name}</div>`;
+            });
+        }
+
+        taskHtml += '</div>';
+
+        const existing = document.getElementById('taskList');
+        if (existing) existing.remove();
+
+        const gameContainer = document.querySelector('.game-container');
+        if (gameContainer) {
+            gameContainer.insertAdjacentHTML('beforeend', taskHtml);
+        }
     }
 
     updateVotingScreen(game) {
