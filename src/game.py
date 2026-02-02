@@ -1,15 +1,16 @@
 import pygame
 import sys
 import random
-from player import Player, PlayerColor, PlayerRole
-from task import Task
-from map import GameMap
-from impostor_abilities import KillManager, VentManager
-from voting import VoteManager
-from minigames import TaskMinigameFactory
-from ui import LobbyUI, SettingsUI, HUD, UIState
-from systems import SoundManager, ChatManager, StatisticsTracker
-from network import NetworkServer, NetworkClient, MessageType
+import os
+from src.player import Player, PlayerColor, PlayerRole
+from src.task import Task
+from src.map import GameMap
+from src.impostor_abilities import KillManager, VentManager
+from src.voting import VoteManager
+from src.minigames import TaskMinigameFactory
+from src.ui import LobbyUI, SettingsUI, HUD, UIState
+from src.systems import SoundManager, ChatManager, StatisticsTracker
+from src.network import NetworkServer, NetworkClient, MessageType
 from enum import Enum
 
 class GameState(Enum):
@@ -20,7 +21,7 @@ class GameState(Enum):
     GAME_OVER = 5
 
 class Game:
-    def __init__(self, width=1280, height=720, multiplayer=False):
+    def __init__(self, width=1280, height=720, multiplayer=False, enable_sound=True, record_frames=False, record_dir="snapshots", record_duration=None):
         pygame.init()
         self.width = width
         self.height = height
@@ -43,7 +44,7 @@ class Game:
         self.kill_manager = KillManager()
         self.vent_manager = VentManager()
         self.vote_manager = VoteManager()
-        self.sound_manager = SoundManager(enable_sound=True)
+        self.sound_manager = SoundManager(enable_sound=enable_sound)
         self.chat_manager = ChatManager()
         self.stats_tracker = StatisticsTracker()
         self.hud = HUD(width, height)
@@ -63,6 +64,16 @@ class Game:
         self.winning_team = None
         self.minigame_active = False
         self.current_minigame = None
+        # Recording screenshots (for headless viewing)
+        self.record_frames = record_frames
+        self.record_dir = record_dir
+        self.record_duration = record_duration  # seconds
+        self._frame_count = 0
+        if self.record_frames:
+            try:
+                os.makedirs(self.record_dir, exist_ok=True)
+            except Exception:
+                pass
 
     def add_player(self, name, color):
         """Add a new player to the game"""
@@ -311,11 +322,25 @@ class Game:
 
     def run(self):
         """Main game loop"""
+        start_ticks = pygame.time.get_ticks()
         while self.running:
             self.handle_events()
             self.update()
             self.draw()
+            # Save frame if requested
+            if self.record_frames:
+                try:
+                    path = os.path.join(self.record_dir, f"frame_{self._frame_count:04d}.png")
+                    pygame.image.save(self.screen, path)
+                    self._frame_count += 1
+                except Exception:
+                    pass
             self.clock.tick(self.fps)
+            # Exit after duration if recording for automated captures
+            if self.record_frames and self.record_duration is not None:
+                elapsed_ms = pygame.time.get_ticks() - start_ticks
+                if elapsed_ms >= int(self.record_duration * 1000):
+                    self.running = False
         
         pygame.quit()
         if self.network_client:
