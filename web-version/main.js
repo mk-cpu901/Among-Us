@@ -38,6 +38,36 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.emergencyButton.addEventListener('click', () => {
         if (game) game.callEmergencyMeeting();
     });
+    
+        // Mobile touch controls (attach after canvas is available)
+        if (canvas) {
+            canvas.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+
+                // Check if touch is on a player
+                if (game && game.players) {
+                    for (let player of game.players) {
+                        const dist = Math.hypot(x - player.x, y - player.y);
+                        if (dist < 30 && game.currentPlayer && game.currentPlayer.role === 'impostor') {
+                            game.killPlayer(player.id);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Responsive canvas resize handler
+        window.addEventListener('resize', () => {
+            const width = Math.min(window.innerWidth - 20, 1200);
+            const height = Math.min(window.innerHeight - 100, 800);
+            if (canvas) {
+                canvas.style.width = width + 'px';
+                canvas.style.height = height + 'px';
+            }
+        });
 });
 
 function startGame() {
@@ -179,25 +209,4 @@ function handleMovement() {
 }
 
 // Mobile touch controls
-canvas.addEventListener('touchstart', (e) => {
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-
-    // Check if touch is on a player
-    for (let player of game.players) {
-        const dist = Math.hypot(x - player.x, y - player.y);
-        if (dist < 30 && game.currentPlayer.role === 'impostor') {
-            game.killPlayer(player.id);
-        }
-    }
-});
-
-// Responsive canvas
-window.addEventListener('resize', () => {
-    const width = Math.min(window.innerWidth - 20, 1200);
-    const height = Math.min(window.innerHeight - 100, 800);
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-});
+// (touch and resize handlers attached during initialization)
