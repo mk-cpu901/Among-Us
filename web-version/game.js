@@ -13,6 +13,10 @@ class Game {
         this.impostorVentCooldown = 0;
         this.emergencyMeetingCooldown = 0;
         this.votingTimer = 0;
+        this.votes = {}; // { voterId: targetId or null for skip }
+        this.pendingEjection = null; // { id, ejectTimer, wasImpostor }
+        this.ejectMessage = null;
+        this.ejectMessageTimer = 0;
         this.discussionTimer = 0;
         this.time = 0;
         this.width = 1200;
@@ -157,8 +161,8 @@ class Game {
         if (this.gameState === 'voting') {
             this.votingTimer = Math.max(0, this.votingTimer - deltaTime);
             if (this.votingTimer === 0) {
-                // Auto-skip if time runs out
-                this.gameState = 'playing';
+                // Resolve votes when time runs out
+                this.resolveVotes();
             }
         }
 
@@ -167,6 +171,12 @@ class Game {
             if (!player.dead) {
                 player.update(deltaTime, this.width, this.height, this);
             }
+        }
+
+        // Eject message timer
+        if (this.ejectMessageTimer > 0) {
+            this.ejectMessageTimer = Math.max(0, this.ejectMessageTimer - deltaTime);
+            if (this.ejectMessageTimer === 0) this.ejectMessage = null;
         }
 
         // Check win conditions
@@ -185,6 +195,62 @@ class Game {
             this.discussionTimer = 15; // 15 second discussion phase
             this.emergencyMeetingCooldown = 120;
         }
+    }
+
+    // Cast a vote (does not immediately kill)
+    castVote(voterId, targetId) {
+        this.votes[voterId] = targetId;
+    }
+
+    skipVote(voterId) {
+        this.votes[voterId] = null;
+    }
+
+    // Tally votes and perform ejection animation if someone is selected
+    resolveVotes() {
+        // Count votes ignoring null (skip)
+        const counts = {};
+        for (let vid in this.votes) {
+            const t = this.votes[vid];
+            if (t === null || t === undefined) continue;
+            counts[t] = (counts[t] || 0) + 1;
+        }
+
+        // No votes cast -> skip
+        const voteEntries = Object.entries(counts);
+        if (voteEntries.length === 0) {
+            this.votes = {};
+            this.gameState = 'playing';
+            return;
+        }
+
+        // Find max
+        voteEntries.sort((a, b) => b[1] - a[1]);
+        const maxVotes = voteEntries[0][1];
+        const top = voteEntries.filter(e => e[1] === maxVotes).map(e => parseInt(e[0]));
+
+        // Tie -> skip
+        if (top.length !== 1) {
+            this.votes = {};
+            this.gameState = 'playing';
+            return;
+        }
+
+        // Eject the chosen player with animation
+        const targetId = top[0];
+        const target = this.players.find(p => p.id === targetId);
+        if (!target) {
+            this.votes = {};
+            this.gameState = 'playing';
+            return;
+        }
+
+        // Start ejection sequence
+        target.ejecting = true;
+        target.ejectTimer = 0;
+        this.pendingEjection = { id: targetId, ejectTimer: 0, wasImpostor: (target.role === 'impostor') };
+        this.votes = {};
+        this.gameState = 'playing';
     }
 
     killPlayer(playerId) {
@@ -213,12 +279,10 @@ class Game {
     }
 
     votePlayer(targetId) {
-        const target = this.players.find(p => p.id === targetId);
-        if (target) {
-            target.dead = true;
-        }
-        this.gameState = 'playing';
+        // Immediate vote helper (legacy) — treat as cast by current player
+        if (this.currentPlayer) this.castVote(this.currentPlayer.id, targetId);
     }
+
 
     checkWinConditions() {
         const impostorsAlive = this.players.filter(p => p.role === 'impostor' && !p.dead).length;
@@ -259,6 +323,16 @@ class Game {
             ctx.beginPath();
             ctx.arc(this.currentPlayer.x, this.currentPlayer.y, 30, 0, Math.PI * 2);
             ctx.stroke();
+        }
+
+        // Draw eject message if present
+        if (this.ejectMessage && this.ejectMessageTimer > 0) {
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(this.width/2 - 220, 40, 440, 60);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.ejectMessage, this.width/2, 80);
         }
     }
 
@@ -353,12 +427,16 @@ class Player {
         this.dead = false;
         this.velocity = { x: 0, y: 0 };
         this.speed = 3;
-        this.radius = 15;
+        this.radius = 24;
         this.customization = {
             hat: customization.hat || 'none',
             pet: customization.pet || 'none',
             visorColor: customization.visorColor || 'cyan'
         };
+        this.walkPhase = 0;
+        this.walkOffset = 0;
+        this.ejecting = false;
+        this.ejectTimer = 0;
     }
 
     move(direction) {
@@ -389,6 +467,35 @@ class Player {
         // Boundary check
         this.x = Math.max(this.radius, Math.min(width - this.radius, this.x));
         this.y = Math.max(this.radius, Math.min(height - this.radius, this.y));
+
+        // Walking animation phase
+        const moving = Math.abs(this.velocity.x) > 0 || Math.abs(this.velocity.y) > 0;
+        if (moving) {
+            this.walkPhase += deltaTime * 12;
+            this.walkOffset = Math.sin(this.walkPhase) * 3;
+        } else {
+            // slowly decay walk offset
+            this.walkPhase = 0;
+            this.walkOffset = 0;
+        }
+
+        // Handle ejection animation
+        if (this.ejecting) {
+            this.ejectTimer += deltaTime;
+            // move upward quickly
+            this.y -= 220 * deltaTime;
+            // rotate or fade not implemented; reduce radius for distance feeling
+            if (this.ejectTimer > 1.2) {
+                this.dead = true;
+                this.ejecting = false;
+                // set global message on game object
+                if (game) {
+                    const wasImp = (this.role === 'impostor');
+                    game.ejectMessage = `${this.name} was ${wasImp ? '' : 'not '}an impostor`;
+                    game.ejectMessageTimer = 3.0;
+                }
+            }
+        }
     }
 
     draw(ctx) {
@@ -396,8 +503,8 @@ class Player {
             ctx.globalAlpha = 0.5;
         }
 
-        // Draw Among Us character
-        this.drawAmongUsCharacter(ctx, this.x, this.y, this.getColorCode());
+        // Draw Among Us character (larger + walking offset)
+        this.drawAmongUsCharacter(ctx, this.x, this.y + this.walkOffset, this.getColorCode());
 
         // Draw name
         ctx.fillStyle = 'white';
@@ -423,9 +530,9 @@ class Player {
     }
 
     drawAmongUsCharacter(ctx, x, y, colorCode) {
-        // Draw bean-shaped body (capsule)
-        const bodyWidth = 16;
-        const bodyHeight = 22;
+        // Draw bean-shaped body (capsule) - scaled up
+        const bodyWidth = 28;
+        const bodyHeight = 40;
 
         // Main body - rounded rectangle
         ctx.fillStyle = colorCode;
@@ -441,10 +548,11 @@ class Player {
         ctx.quadraticCurveTo(x - bodyWidth / 2, y - bodyHeight / 2, x - bodyWidth / 2 + 5, y - bodyHeight / 2);
         ctx.fill();
 
+
         // Draw visor/helmet
         ctx.fillStyle = '#cccccc';
         ctx.beginPath();
-        ctx.ellipse(x, y - 6, 10, 7, 0, 0, Math.PI * 2);
+        ctx.ellipse(x, y - 10, 16, 11, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Visor shine/glass - use customization visor color
@@ -459,15 +567,24 @@ class Player {
         const visorColor = visorColorMap[this.customization.visorColor] || '#00ccff';
         ctx.fillStyle = visorColor;
         ctx.beginPath();
-        ctx.ellipse(x - 3, y - 8, 5, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(x - 6, y - 12, 9, 7, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Backpack (simple rectangle)
         ctx.fillStyle = '#666666';
-        ctx.fillRect(x - 5, y + 8, 10, 8);
+        ctx.fillRect(x - 9, y + 12, 18, 12);
         ctx.strokeStyle = '#999999';
         ctx.lineWidth = 1;
-        ctx.strokeRect(x - 5, y + 8, 10, 8);
+        ctx.strokeRect(x - 9, y + 12, 18, 12);
+
+        // Draw simple legs (walking bobbing handled by caller via y offset)
+        ctx.fillStyle = colorCode;
+        ctx.beginPath();
+        ctx.ellipse(x - 7, y + 20, 6, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 7, y + 20, 6, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
 
         // Draw hat if selected
         if (this.customization.hat !== 'none') {
@@ -485,8 +602,8 @@ class Player {
             ctx.fillText(petEmoji, x + 15, y + 10);
         }
 
-        // Border around character
-        ctx.strokeStyle = colorCode;
+        // Border around character (subtle)
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.ellipse(x, y, bodyWidth / 2 + 2, bodyHeight / 2 + 2, 0, 0, Math.PI * 2);

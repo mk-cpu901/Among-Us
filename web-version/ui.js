@@ -338,22 +338,29 @@ class UI {
 
     updateVotingScreen(game) {
         this.votingPlayers.innerHTML = '';
-        
         game.players.forEach(player => {
             if (!player.dead) {
                 const button = document.createElement('button');
                 button.className = 'player-vote';
                 button.innerHTML = `<div>${player.name}</div><div style="font-size: 12px;">${player.color}</div>`;
                 button.onclick = () => {
-                    game.votePlayer(player.id);
-                    this.showScreen('game');
+                    // Cast vote for the current player
+                    if (game.currentPlayer) {
+                        game.castVote(game.currentPlayer.id, player.id);
+                        // show confirmation and return to game screen
+                        this.showScreen('game');
+                    }
                 };
                 this.votingPlayers.appendChild(button);
             }
         });
 
         this.skipVoteButton.onclick = () => {
-            game.gameState = 'playing';
+            if (game.currentPlayer) {
+                game.skipVote(game.currentPlayer.id);
+            }
+            // Resolve immediately after skip
+            game.resolveVotes();
             this.showScreen('game');
         };
     }
